@@ -23,7 +23,21 @@ interface TokenPayload {
   type: 'access' | 'refresh';
 }
 
+// Development mode mock user
+const devUser = {
+  id: 'dev-user-id',
+  extensionId: 'dev-extension-id',
+  role: 'extension',
+  type: 'access' as const
+};
+
 export const verifyToken = (req: Request, res: Response, next: NextFunction) => {
+  // Bypass authentication in development mode
+  if (process.env.NODE_ENV === 'development') {
+    req.user = devUser;
+    return next();
+  }
+
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {
@@ -49,6 +63,14 @@ export const verifyToken = (req: Request, res: Response, next: NextFunction) => 
 };
 
 export const generateTokens = (extensionId: string): { accessToken: string; refreshToken: string } => {
+  // Return mock tokens in development mode
+  if (process.env.NODE_ENV === 'development') {
+    return {
+      accessToken: 'dev-access-token',
+      refreshToken: 'dev-refresh-token'
+    };
+  }
+
   const payload: TokenPayload = {
     id: crypto.randomUUID(),
     extensionId,
@@ -65,7 +87,7 @@ export const generateTokens = (extensionId: string): { accessToken: string; refr
     payload,
     process.env.JWT_SECRET || 'your-secret-key',
     {
-      expiresIn: '30d'  // Extended to 30 days
+      expiresIn: '30d'
     }
   );
 
@@ -73,7 +95,7 @@ export const generateTokens = (extensionId: string): { accessToken: string; refr
     refreshPayload,
     process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-key',
     {
-      expiresIn: '60d'  // Refresh token valid for 60 days
+      expiresIn: '60d'
     }
   );
 
@@ -81,6 +103,11 @@ export const generateTokens = (extensionId: string): { accessToken: string; refr
 };
 
 export const refreshAccessToken = (refreshToken: string): string => {
+  // Return mock token in development mode
+  if (process.env.NODE_ENV === 'development') {
+    return 'dev-new-access-token';
+  }
+
   try {
     const decoded = jwt.verify(
       refreshToken,
@@ -91,7 +118,6 @@ export const refreshAccessToken = (refreshToken: string): string => {
       throw new AppError('Invalid token type', 401);
     }
 
-    // Generate new access token
     return jwt.sign(
       {
         id: decoded.id,
@@ -101,7 +127,7 @@ export const refreshAccessToken = (refreshToken: string): string => {
       },
       process.env.JWT_SECRET || 'your-secret-key',
       {
-        expiresIn: '30d'  // New access token also valid for 30 days
+        expiresIn: '30d'
       }
     );
   } catch (error) {
@@ -110,6 +136,11 @@ export const refreshAccessToken = (refreshToken: string): string => {
 };
 
 export const verifyExtensionId = (req: Request, res: Response, next: NextFunction) => {
+  // Bypass extension ID verification in development mode
+  if (process.env.NODE_ENV === 'development') {
+    return next();
+  }
+
   const extensionId = req.headers['x-extension-id'];
   if (!extensionId || extensionId !== process.env.EXTENSION_ID) {
     throw new AppError('Invalid extension ID', 401);
