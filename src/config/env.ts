@@ -1,25 +1,10 @@
 import { z } from 'zod';
 
-const envSchema = z.object({
+// Create base schema without JWT validation
+const baseSchema = z.object({
   // Server Configuration
   NODE_ENV: z.enum(['development', 'staging', 'production']),
   PORT: z.string().transform(Number),
-  
-  // Security Configuration
-  JWT_SECRET: z.string().min(32).optional().refine(
-    (val) => process.env.NODE_ENV === 'development' || !!val,
-    { message: 'JWT_SECRET is required in non-development environments' }
-  ),
-  JWT_REFRESH_SECRET: z.string().min(32).optional().refine(
-    (val) => process.env.NODE_ENV === 'development' || !!val,
-    { message: 'JWT_REFRESH_SECRET is required in non-development environments' }
-  ),
-  JWT_ACCESS_EXPIRATION: z.string().optional().default('30d'),
-  JWT_REFRESH_EXPIRATION: z.string().optional().default('60d'),
-  EXTENSION_PUBLIC_KEY: z.string().optional().refine(
-    (val) => process.env.NODE_ENV === 'development' || !!val,
-    { message: 'EXTENSION_PUBLIC_KEY is required in non-development environments' }
-  ),
   
   // CORS Configuration
   ALLOWED_ORIGINS: z.string().optional().default('*'),
@@ -42,6 +27,34 @@ const envSchema = z.object({
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).optional().default('info'),
   LOG_FORMAT: z.enum(['json', 'simple']).optional().default('simple'),
 });
+
+// Create production schema with JWT validation
+const productionSchema = baseSchema.extend({
+  JWT_SECRET: z.string().min(32),
+  JWT_REFRESH_SECRET: z.string().min(32),
+  JWT_ACCESS_EXPIRATION: z.string().default('30d'),
+  JWT_REFRESH_EXPIRATION: z.string().default('60d'),
+  EXTENSION_PUBLIC_KEY: z.string(),
+});
+
+// Create development schema without JWT validation
+const developmentSchema = baseSchema.extend({
+  JWT_SECRET: z.string().min(32).optional(),
+  JWT_REFRESH_SECRET: z.string().min(32).optional(),
+  JWT_ACCESS_EXPIRATION: z.string().optional().default('30d'),
+  JWT_REFRESH_EXPIRATION: z.string().optional().default('60d'),
+  EXTENSION_PUBLIC_KEY: z.string().optional(),
+});
+
+// Create staging schema (same as production)
+const stagingSchema = productionSchema;
+
+// Create the final schema based on NODE_ENV
+const envSchema = z.discriminatedUnion('NODE_ENV', [
+  z.object({ NODE_ENV: z.literal('development') }).merge(developmentSchema),
+  z.object({ NODE_ENV: z.literal('staging') }).merge(stagingSchema),
+  z.object({ NODE_ENV: z.literal('production') }).merge(productionSchema),
+]);
 
 export type EnvConfig = z.infer<typeof envSchema>;
 
