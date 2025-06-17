@@ -79,46 +79,47 @@ export class TrainingService {
       const validatedQuery = QuerySchema.parse(query);
       const collection = this.db.getCollection();
 
-      const where: Record<string, any> = {};
-      if (validatedQuery.category) {
-        where.category = validatedQuery.category;
-      }
-      if (validatedQuery.startDate || validatedQuery.endDate) {
-        where.timestamp = {};
-        if (validatedQuery.startDate) {
-          where.timestamp.$gte = validatedQuery.startDate;
-        }
-        if (validatedQuery.endDate) {
-          where.timestamp.$lte = validatedQuery.endDate;
-        }
-      }
-
-      const result = await collection.query({
-        queryTexts: [''], // Empty query to get all documents
-        nResults: validatedQuery.limit,
-        where
+      // First get all documents
+      const result = await collection.get({
+        limit: validatedQuery.limit,
+        offset: validatedQuery.offset
       });
 
-      if (!result.ids || !result.ids[0]) {
+      if (!result.ids || !result.ids.length) {
         return [];
       }
 
-      return result.ids[0].map((id, index) => {
-        const metadata = result.metadatas?.[0]?.[index];
-        if (!metadata) throw new AppError('Invalid metadata', 500);
+      // Filter results based on query parameters
+      const filteredResults = result.ids.map((id, index) => {
+        const metadata = result.metadatas?.[index];
+        if (!metadata) return null;
+
+        // Apply filters
+        if (validatedQuery.category && metadata.category !== validatedQuery.category) {
+          return null;
+        }
+        const timestamp = Number(metadata.timestamp);
+        if (validatedQuery.startDate && timestamp < validatedQuery.startDate) {
+          return null;
+        }
+        if (validatedQuery.endDate && timestamp > validatedQuery.endDate) {
+          return null;
+        }
 
         return {
           id,
-          text: result.documents?.[0]?.[index] || '',
-          embedding: result.embeddings?.[0]?.[index] || [],
+          text: result.documents?.[index] || '',
+          embedding: result.embeddings?.[index] || [],
           metadata: {
             category: metadata.category as string,
-            timestamp: metadata.timestamp as number,
+            timestamp: timestamp,
             source: metadata.source as string,
             tags: (metadata.tags as string)?.split(',').filter(Boolean)
           }
         };
-      });
+      }).filter((item): item is NonNullable<typeof item> => item !== null);
+
+      return filteredResults;
     } catch (error) {
       if (error instanceof z.ZodError) {
         throw new AppError('Invalid query format', 400);
