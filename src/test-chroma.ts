@@ -1,5 +1,5 @@
 import { ChromaClient } from 'chromadb';
-import { DefaultEmbeddingFunction } from 'chromadb-default-embed';
+import { OpenAIEmbeddingFunction } from 'chromadb';
 
 async function testChroma() {
   try {
@@ -14,7 +14,10 @@ async function testChroma() {
     });
 
     // Initialize the embedding function
-    const embeddingFunction = new DefaultEmbeddingFunction();
+    const embeddingFunction = new OpenAIEmbeddingFunction({
+      openai_api_key: process.env.OPENAI_API_KEY || 'dummy-key',
+      openai_model: 'text-embedding-ada-002'
+    });
 
     // Test basic connection
     console.log('Testing ChromaDB connection...');
