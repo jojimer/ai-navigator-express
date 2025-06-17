@@ -1,5 +1,5 @@
 import { validateEnv } from '../config/env';
-import ChromaDB from '../db/chroma';
+import { ChromaDB } from '../db/chroma';
 import * as fs from 'fs';
 
 export async function performStartupChecks() {

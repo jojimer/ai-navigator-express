@@ -12,7 +12,7 @@ import { corsOptions, securityHeaders } from './middleware/security';
 import { apiLimiter, aiEndpointLimiter, trainingDataLimiter } from './middleware/rateLimiter';
 import { requestLogger } from './middleware/requestLogger';
 import { swaggerSpec } from './config/swagger';
-import ChromaDB from './db/chroma';
+import { ChromaDB } from './db/chroma';
 import { WebSocketService } from './services/websocketService';
 import { performStartupChecks } from './utils/startupChecks';
 

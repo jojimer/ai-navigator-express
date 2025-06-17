@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import ChromaDB from '../db/chroma';
+import { ChromaDB } from '../db/chroma';
 
 const router = Router();
 

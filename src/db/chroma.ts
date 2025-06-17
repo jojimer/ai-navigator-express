@@ -1,7 +1,7 @@
 import { ChromaClient, Collection } from 'chromadb';
 import { AppError } from '../middleware/errorHandler';
 
-class ChromaDB {
+export class ChromaDB {
   private static instance: ChromaDB;
   private client: ChromaClient;
   private collection: Collection | null = null;
@@ -119,6 +119,4 @@ class ChromaDB {
       throw new AppError('Failed to get collection info from ChromaDB', 500);
     }
   }
-}
-
-export default ChromaDB; 
+} 
