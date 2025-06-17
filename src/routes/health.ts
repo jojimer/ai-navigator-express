@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import { ChromaDB } from '../db/chroma';
+import ChromaDB from '../db/chroma';
 
 const router = Router();
 
 router.get('/', async (req, res) => {
   try {
     const db = ChromaDB.getInstance();
-    await db.healthCheck();
+    await db.initialize();
     
     const healthData = {
       status: 'healthy',
@@ -50,7 +50,7 @@ router.get('/connection-test', (req, res) => {
 router.get('/detailed', async (req, res) => {
   try {
     const db = ChromaDB.getInstance();
-    await db.healthCheck();
+    await db.initialize();
     
     const healthData = {
       status: 'healthy',
