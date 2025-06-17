@@ -7,12 +7,17 @@ class ChromaDB {
   private collection: Collection | null = null;
 
   private constructor() {
+    const chromaUrl = process.env.CHROMA_URL || 'http://127.0.0.1:8000';
+    console.log(`Initializing ChromaDB client with URL: ${chromaUrl}`);
+    
     this.client = new ChromaClient({
-      path: process.env.CHROMA_URL || 'http://127.0.0.1:8000',
+      path: chromaUrl,
       fetchOptions: {
         headers: {
           'Content-Type': 'application/json',
         },
+        mode: 'cors',
+        credentials: 'omit'
       }
     });
   }
@@ -27,12 +32,16 @@ class ChromaDB {
   public async initialize(): Promise<void> {
     try {
       // Test connection first
+      console.log('Testing ChromaDB connection...');
       await this.client.heartbeat();
       console.log('✅ ChromaDB connection successful');
 
       // Create or get the collection
+      const collectionName = process.env.CHROMA_COLLECTION_NAME || 'training_data';
+      console.log(`Getting or creating collection: ${collectionName}`);
+      
       this.collection = await this.client.getOrCreateCollection({
-        name: process.env.CHROMA_COLLECTION_NAME || 'training_data',
+        name: collectionName,
         metadata: {
           description: 'Collection for storing training data'
         }
@@ -58,7 +67,7 @@ class ChromaDB {
   public async addDocuments(documents: string[], metadatas: any[] = [], ids: string[] = []): Promise<void> {
     try {
       const collection = this.getCollection();
-      await collection.add({
+      await collection.upsert({
         ids: ids.length ? ids : documents.map((_, i) => `doc_${i}`),
         documents: documents,
         metadatas: metadatas.length ? metadatas : documents.map(() => ({ timestamp: Date.now() }))
