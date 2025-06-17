@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-// Create base schema without JWT validation
+// Base schema without JWT fields
 const baseSchema = z.object({
   // Server Configuration
   NODE_ENV: z.enum(['development', 'staging', 'production']),
@@ -28,7 +28,7 @@ const baseSchema = z.object({
   LOG_FORMAT: z.enum(['json', 'simple']).optional().default('simple'),
 });
 
-// Create production schema with JWT validation
+// Production schema with JWT fields
 const productionSchema = baseSchema.extend({
   JWT_SECRET: z.string().min(32),
   JWT_REFRESH_SECRET: z.string().min(32),
@@ -37,30 +37,27 @@ const productionSchema = baseSchema.extend({
   EXTENSION_PUBLIC_KEY: z.string(),
 });
 
-// Create development schema without JWT validation
-const developmentSchema = baseSchema.extend({
-  JWT_SECRET: z.string().min(32).optional(),
-  JWT_REFRESH_SECRET: z.string().min(32).optional(),
-  JWT_ACCESS_EXPIRATION: z.string().optional().default('30d'),
-  JWT_REFRESH_EXPIRATION: z.string().optional().default('60d'),
-  EXTENSION_PUBLIC_KEY: z.string().optional(),
-});
-
-// Create staging schema (same as production)
-const stagingSchema = productionSchema;
-
-// Create the final schema based on NODE_ENV
-const envSchema = z.discriminatedUnion('NODE_ENV', [
-  z.object({ NODE_ENV: z.literal('development') }).merge(developmentSchema),
-  z.object({ NODE_ENV: z.literal('staging') }).merge(stagingSchema),
-  z.object({ NODE_ENV: z.literal('production') }).merge(productionSchema),
-]);
-
-export type EnvConfig = z.infer<typeof envSchema>;
+export type EnvConfig = z.infer<typeof baseSchema> & {
+  JWT_SECRET?: string;
+  JWT_REFRESH_SECRET?: string;
+  JWT_ACCESS_EXPIRATION?: string;
+  JWT_REFRESH_EXPIRATION?: string;
+  EXTENSION_PUBLIC_KEY?: string;
+};
 
 export const validateEnv = (): EnvConfig => {
+  console.log('Current NODE_ENV:', process.env.NODE_ENV);
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  console.log('Is development mode:', isDevelopment);
+
   try {
-    return envSchema.parse(process.env);
+    if (isDevelopment) {
+      // In development, only validate base schema
+      return baseSchema.parse(process.env) as EnvConfig;
+    } else {
+      // In production/staging, validate with JWT fields
+      return productionSchema.parse(process.env);
+    }
   } catch (error) {
     if (error instanceof z.ZodError) {
       const missingVars = error.errors.map(err => err.path.join('.')).join(', ');
