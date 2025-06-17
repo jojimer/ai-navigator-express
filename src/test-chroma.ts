@@ -4,7 +4,12 @@ async function testChroma() {
   try {
     console.log('Initializing ChromaDB test...');
     const client = new ChromaClient({
-      path: 'http://localhost:8000'
+      path: 'http://127.0.0.1:8000',  // Using explicit IPv4 address
+      fetchOptions: {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
     });
 
     // Test basic connection
