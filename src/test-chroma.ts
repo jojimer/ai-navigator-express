@@ -1,4 +1,5 @@
 import { ChromaClient } from 'chromadb';
+import { DefaultEmbeddingFunction } from 'chromadb-default-embed';
 
 async function testChroma() {
   try {
@@ -12,6 +13,9 @@ async function testChroma() {
       }
     });
 
+    // Initialize the embedding function
+    const embeddingFunction = new DefaultEmbeddingFunction();
+
     // Test basic connection
     console.log('Testing ChromaDB connection...');
     await client.heartbeat();
@@ -23,7 +27,8 @@ async function testChroma() {
       name: 'test_collection',
       metadata: {
         description: 'Test collection'
-      }
+      },
+      embeddingFunction: embeddingFunction
     });
     console.log('✅ Collection created successfully!');
 
