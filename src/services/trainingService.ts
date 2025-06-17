@@ -1,6 +1,7 @@
 import ChromaDB from '../db/chroma';
 import { TrainingData, TrainingDataSchema, Query, QuerySchema } from '../types/training';
 import { AppError } from '../middleware/errorHandler';
+import { z } from 'zod';
 
 export class TrainingService {
   private db: ChromaDB;
