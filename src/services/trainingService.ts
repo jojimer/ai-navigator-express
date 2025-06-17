@@ -18,9 +18,18 @@ export class TrainingService {
       const result = await collection.add({
         ids: [validatedData.id || crypto.randomUUID()],
         embeddings: [validatedData.embedding],
-        metadatas: [validatedData.metadata],
+        metadatas: [{
+          category: validatedData.metadata.category,
+          timestamp: validatedData.metadata.timestamp,
+          source: validatedData.metadata.source || '',
+          tags: validatedData.metadata.tags?.join(',') || ''
+        }],
         documents: [validatedData.text]
       });
+
+      if (!result.ids || !result.ids[0]) {
+        throw new AppError('Failed to create training data', 500);
+      }
 
       return {
         ...validatedData,
@@ -45,11 +54,19 @@ export class TrainingService {
         throw new AppError('Training data not found', 404);
       }
 
+      const metadata = result.metadatas[0];
+      if (!metadata) throw new AppError('Invalid metadata', 500);
+
       return {
         id: result.ids[0],
-        text: result.documents[0],
-        embedding: result.embeddings[0],
-        metadata: result.metadatas[0]
+        text: result.documents[0] || '',
+        embedding: result.embeddings[0] || [],
+        metadata: {
+          category: metadata.category as string,
+          timestamp: metadata.timestamp as number,
+          source: metadata.source as string,
+          tags: (metadata.tags as string)?.split(',').filter(Boolean)
+        }
       };
     } catch (error) {
       if (error instanceof AppError) throw error;
@@ -77,17 +94,31 @@ export class TrainingService {
       }
 
       const result = await collection.query({
-        where,
-        limit: validatedQuery.limit,
-        offset: validatedQuery.offset
+        queryTexts: [''], // Empty query to get all documents
+        nResults: validatedQuery.limit,
+        where
       });
 
-      return result.ids.map((id, index) => ({
-        id,
-        text: result.documents[index],
-        embedding: result.embeddings[index],
-        metadata: result.metadatas[index]
-      }));
+      if (!result.ids || !result.ids[0]) {
+        return [];
+      }
+
+      return result.ids[0].map((id, index) => {
+        const metadata = result.metadatas?.[0]?.[index];
+        if (!metadata) throw new AppError('Invalid metadata', 500);
+
+        return {
+          id,
+          text: result.documents?.[0]?.[index] || '',
+          embedding: result.embeddings?.[0]?.[index] || [],
+          metadata: {
+            category: metadata.category as string,
+            timestamp: metadata.timestamp as number,
+            source: metadata.source as string,
+            tags: (metadata.tags as string)?.split(',').filter(Boolean)
+          }
+        };
+      });
     } catch (error) {
       if (error instanceof z.ZodError) {
         throw new AppError('Invalid query format', 400);
@@ -106,7 +137,12 @@ export class TrainingService {
       await collection.update({
         ids: [id],
         embeddings: [validatedData.embedding],
-        metadatas: [validatedData.metadata],
+        metadatas: [{
+          category: validatedData.metadata.category,
+          timestamp: validatedData.metadata.timestamp,
+          source: validatedData.metadata.source || '',
+          tags: validatedData.metadata.tags?.join(',') || ''
+        }],
         documents: [validatedData.text]
       });
 
