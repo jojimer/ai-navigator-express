@@ -1,4 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
+import dotenv from 'dotenv';
 import { AppError } from '../middleware/errorHandler';
 import {
   OpenRouterConfig,
@@ -11,11 +12,19 @@ import {
   EmbeddingResponseSchema
 } from '../types/openrouter';
 
+// Load environment variables
+dotenv.config();
+
 export class OpenRouterClient {
   private client: AxiosInstance;
   private config: OpenRouterConfig;
 
   constructor(config: Partial<OpenRouterConfig>) {
+    // Ensure environment variables are loaded
+    if (!process.env.OPENROUTER_API_KEY) {
+      throw new AppError('OPENROUTER_API_KEY is not set in environment variables', 500);
+    }
+
     this.config = OpenRouterConfigSchema.parse({
       ...config,
       apiKey: process.env.OPENROUTER_API_KEY
