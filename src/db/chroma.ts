@@ -8,7 +8,12 @@ class ChromaDB {
 
   private constructor() {
     this.client = new ChromaClient({
-      path: process.env.CHROMA_URL || 'http://localhost:8000'
+      path: process.env.CHROMA_URL || 'http://127.0.0.1:8000',
+      fetchOptions: {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
     });
   }
 
@@ -21,26 +26,24 @@ class ChromaDB {
 
   public async initialize(): Promise<void> {
     try {
+      // Test connection first
+      await this.client.heartbeat();
+      console.log('✅ ChromaDB connection successful');
+
       // Create or get the collection
       this.collection = await this.client.getOrCreateCollection({
-        name: 'training_data',
+        name: process.env.CHROMA_COLLECTION_NAME || 'training_data',
         metadata: {
           description: 'Collection for storing training data'
         }
       });
-
-      // Create indexes for efficient querying
-      await this.collection.createIndex({
-        field: 'metadata.category',
-        type: 'text'
-      });
-
-      await this.collection.createIndex({
-        field: 'metadata.timestamp',
-        type: 'numeric'
-      });
+      console.log('✅ ChromaDB collection initialized');
     } catch (error) {
-      throw new AppError('Failed to initialize ChromaDB', 500);
+      console.error('ChromaDB initialization error:', error);
+      if (error instanceof Error) {
+        throw new AppError(`Failed to initialize ChromaDB: ${error.message}`, 500);
+      }
+      throw new AppError('Failed to initialize ChromaDB: Unknown error', 500);
     }
   }
 
@@ -49,6 +52,63 @@ class ChromaDB {
       throw new AppError('ChromaDB collection not initialized', 500);
     }
     return this.collection;
+  }
+
+  // Helper method to add documents
+  public async addDocuments(documents: string[], metadatas: any[] = [], ids: string[] = []): Promise<void> {
+    try {
+      const collection = this.getCollection();
+      await collection.add({
+        ids: ids.length ? ids : documents.map((_, i) => `doc_${i}`),
+        documents: documents,
+        metadatas: metadatas.length ? metadatas : documents.map(() => ({ timestamp: Date.now() }))
+      });
+      console.log(`✅ Added ${documents.length} documents to ChromaDB`);
+    } catch (error) {
+      console.error('Error adding documents:', error);
+      throw new AppError('Failed to add documents to ChromaDB', 500);
+    }
+  }
+
+  // Helper method to query documents
+  public async queryDocuments(query: string, nResults: number = 5): Promise<any> {
+    try {
+      const collection = this.getCollection();
+      const results = await collection.query({
+        queryTexts: [query],
+        nResults: nResults
+      });
+      console.log(`✅ Query successful, found ${results.ids[0].length} results`);
+      return results;
+    } catch (error) {
+      console.error('Error querying documents:', error);
+      throw new AppError('Failed to query documents from ChromaDB', 500);
+    }
+  }
+
+  // Helper method to delete documents
+  public async deleteDocuments(ids: string[]): Promise<void> {
+    try {
+      const collection = this.getCollection();
+      await collection.delete({ ids });
+      console.log(`✅ Deleted ${ids.length} documents from ChromaDB`);
+    } catch (error) {
+      console.error('Error deleting documents:', error);
+      throw new AppError('Failed to delete documents from ChromaDB', 500);
+    }
+  }
+
+  // Helper method to get collection info
+  public async getCollectionInfo(): Promise<any> {
+    try {
+      const collection = this.getCollection();
+      const count = await collection.count();
+      console.log(`✅ Collection contains ${count} documents`);
+      return { count };
+    } catch (error) {
+      console.error('Error getting collection info:', error);
+      throw new AppError('Failed to get collection info from ChromaDB', 500);
+    }
   }
 }
 
