@@ -16,7 +16,7 @@ const trainingLimiter = rateLimit({
 router.post('/record', trainingLimiter, controller.record);
 
 // List training records with optional filters
-router.get('/list', trainingLimiter, controller.list);
+router.get('/api/training/list', trainingLimiter, controller.list);
 
 // Update training record
 router.put('/update/:id', trainingLimiter, controller.update);
