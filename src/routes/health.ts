@@ -27,6 +27,25 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Connection test endpoint
+router.get('/connection-test', (req, res) => {
+  const connectionInfo = {
+    timestamp: new Date().toISOString(),
+    headers: req.headers,
+    ip: req.ip,
+    userAgent: req.get('user-agent'),
+    extensionId: req.headers['x-extension-id']
+  };
+
+  console.log('Connection test:', connectionInfo);
+  
+  res.json({
+    status: 'success',
+    message: 'Connection test successful',
+    connectionInfo
+  });
+});
+
 // Detailed health check with more metrics
 router.get('/detailed', async (req, res) => {
   try {
