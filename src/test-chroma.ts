@@ -1,22 +1,15 @@
 import { ChromaClient } from 'chromadb';
-import { OpenAIEmbeddingFunction } from 'chromadb';
 
 async function testChroma() {
   try {
     console.log('Initializing ChromaDB test...');
     const client = new ChromaClient({
-      path: 'http://127.0.0.1:8000',  // Using explicit IPv4 address
+      path: 'http://127.0.0.1:8000',
       fetchOptions: {
         headers: {
           'Content-Type': 'application/json',
         },
       }
-    });
-
-    // Initialize the embedding function
-    const embeddingFunction = new OpenAIEmbeddingFunction({
-      openai_api_key: process.env.OPENAI_API_KEY || 'dummy-key',
-      openai_model: 'text-embedding-ada-002'
     });
 
     // Test basic connection
@@ -30,8 +23,7 @@ async function testChroma() {
       name: 'test_collection',
       metadata: {
         description: 'Test collection'
-      },
-      embeddingFunction: embeddingFunction
+      }
     });
     console.log('✅ Collection created successfully!');
 
