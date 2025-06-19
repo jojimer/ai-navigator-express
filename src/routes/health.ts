@@ -9,7 +9,7 @@ router.get('/', async (req, res) => {
     await db.initialize();
     
     const healthData = {
-      status: 'healthy',
+      status: 'ok',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       memory: process.memoryUsage(),
@@ -53,7 +53,7 @@ router.get('/detailed', async (req, res) => {
     await db.initialize();
     
     const healthData = {
-      status: 'healthy',
+      status: 'ok',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       memory: process.memoryUsage(),
