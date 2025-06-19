@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { AIController } from '../controllers/aiController';
+import { verifyToken } from '../middleware/auth';
 
 const router = Router();
 const controller = new AIController();
@@ -25,12 +26,12 @@ const analysisLimiter = rateLimit({
 });
 
 // Text generation endpoint
-router.post('/generate', textGenerationLimiter, controller.generateText);
+router.post('/generate', verifyToken, textGenerationLimiter, controller.generateText);
 
 // Embedding generation endpoint
-router.post('/embed', embeddingLimiter, controller.generateEmbedding);
+router.post('/embed', verifyToken, embeddingLimiter, controller.generateEmbedding);
 
 // Text analysis endpoint
-router.post('/analyze', analysisLimiter, controller.analyzeText);
+router.post('/analyze', verifyToken, analysisLimiter, controller.analyzeText);
 
 export default router; 

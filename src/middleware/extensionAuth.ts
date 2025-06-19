@@ -3,6 +3,11 @@ import { AppError } from './errorHandler';
 import { verifySignature } from '../utils/keyPair';
 
 export const verifyExtensionSignature = (req: Request, res: Response, next: NextFunction) => {
+  // Bypass extension signature verification in development mode
+  if (process.env.NODE_ENV === 'development') {
+    return next();
+  }
+
   try {
     const extensionId = req.headers['x-extension-id'];
     const timestamp = req.headers['x-timestamp'];

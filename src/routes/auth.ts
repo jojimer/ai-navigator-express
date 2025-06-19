@@ -1,9 +1,18 @@
 import { Router } from 'express';
-import { generateTokens, refreshAccessToken, verifyExtensionId } from '../middleware/auth';
+import { generateTokens, refreshAccessToken } from '../middleware/auth';
 import { verifyExtensionSignature } from '../middleware/extensionAuth';
 import { AppError } from '../middleware/errorHandler';
 
 const router = Router();
+
+// Development test endpoint - no authentication required in dev mode
+router.get('/dev-test', verifyExtensionSignature, (req, res) => {
+  res.json({ 
+    message: 'Development mode test successful',
+    mode: process.env.NODE_ENV,
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Generate new tokens - requires extension signature verification
 router.post('/token', verifyExtensionSignature, async (req, res, next) => {

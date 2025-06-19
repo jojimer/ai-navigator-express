@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { ExtensionController } from '../controllers/extensionController';
+import { verifyToken } from '../middleware/auth';
 
 const router = Router();
 const controller = new ExtensionController();
@@ -13,12 +14,12 @@ const extensionLimiter = rateLimit({
 });
 
 // Record extension action
-router.post('/action', extensionLimiter, controller.recordAction);
+router.post('/action', verifyToken, extensionLimiter, controller.recordAction);
 
 // Get extension status
-router.get('/status', extensionLimiter, controller.getStatus);
+router.get('/status', verifyToken, extensionLimiter, controller.getStatus);
 
 // Submit feedback
-router.post('/feedback', extensionLimiter, controller.submitFeedback);
+router.post('/feedback', verifyToken, extensionLimiter, controller.submitFeedback);
 
 export default router; 
